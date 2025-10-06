@@ -25,6 +25,11 @@ def lancement():
     y_zone = hauteur * 0.03
     espacement = 20
 
+    #zone pioche
+    w_zonepioche, h_zonepioche = 130, 180
+    x_zonepioche = largeur * 0.75
+    y_zonepioche = hauteur * 0.03
+
     for i in range(4):
         x = x_zone + i * (w_zone + espacement)
         rect_id = canvas.create_rectangle(x, y_zone, x + w_zone, y_zone + h_zone,
@@ -34,6 +39,8 @@ def lancement():
         zone_obj.text_id = text_id
         canvas.zones_as.append(zone_obj)
         canvas.tag_bind(rect_id, "<Button-1>", lambda e, idx=i: clic_zone_as(idx, canvas))
+
+    rect_pioche = canvas.create_rectangle(x_zonepioche, y_zonepioche, x_zonepioche + w_zonepioche, y_zonepioche + h_zonepioche, outline="white", dash=(5,3), width=2, fill="green")
 
     # --- Boutons ---
     x_btn = largeur * 0.945
