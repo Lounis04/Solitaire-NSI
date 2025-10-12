@@ -35,6 +35,7 @@ def lancement():
         rect_id = canvas.create_rectangle(x, y_zone, x + w_zone, y_zone + h_zone,
                                           outline="white", dash=(5,3), width=2, fill="green")
         zone_obj = Zones_as(0, None, x, y_zone)
+        zone_obj.rect_id = rect_id
         text_id = canvas.create_text(x + 5, y_zone - 15, anchor="nw", text="vide", fill="white")
         zone_obj.text_id = text_id
         canvas.zones_as.append(zone_obj)
@@ -136,9 +137,11 @@ def clic_zone_as(i, canvas):
         img = tk.PhotoImage(file=carte_obj.image)
         canvas.images.append(img)
         zone.photo = img
-        # carte parfaitement alignée avec la zone
-        canvas.create_image(zone.x, zone.y, image=img, anchor="nw")
+        carte_id = canvas.create_image(zone.x, zone.y, image=img, anchor="nw")
+        canvas.tag_bind(carte_id, "<Button-1>", lambda e, idx=i: clic_zone_as(idx, canvas))
         canvas.itemconfig(zone.text_id, text=f"{zone.famille} ({zone.valeur})" if zone.famille else "vide")
+        canvas.tag_raise(carte_id)  
+        canvas.tag_raise(zone.text_id) 
 
     carte_en_main = None
 
