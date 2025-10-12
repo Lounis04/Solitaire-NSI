@@ -1,28 +1,20 @@
-from cartes import jeu
-
 class Zones_as:
     def __init__(self, valeur, famille, x, y):
-        self.valeur = valeur   # valeur de la dernière carte posée (0 si vide)
-        self.famille = famille # famille des cartes posées
+        self.cartes = []
+        self.valeur = valeur  # Pour compatibilité
+        self.famille = famille  # None au départ, défini par la première carte
         self.x = x
         self.y = y
-        self.photo = None
+        self.rect_id = None
         self.text_id = None
 
-    def changement(self, idx_carte):
-        carte = jeu[idx_carte]
+    def peut_ajouter(self, carte):
+        if not self.cartes:
+            return carte.valeur == 1  # As sur zone vide
+        top = self.cartes[-1]
+        return carte.famille == top.famille and carte.valeur == top.valeur + 1
 
-        if self.valeur == 0:
-            # zone vide -> accepter uniquement un As
-            if carte.valeur == 1:
-                self.valeur = 1
-                self.famille = carte.famille
-                return True
-            return False
-
-        # sinon -> vérifier famille et valeur suivante
-        if carte.famille == self.famille and carte.valeur == self.valeur + 1:
-            self.valeur += 1
-            return True
-
-        return False
+    def ajouter_carte(self, carte):
+        if not self.cartes:
+            self.famille = carte.famille
+        self.cartes.append(carte)
