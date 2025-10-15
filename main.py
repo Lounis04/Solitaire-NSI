@@ -246,6 +246,26 @@ def mise_en_place(canvas, jeu):
             canvas.tag_bind(image_id, "<Button-1>",lambda e, c=carte: clic_carte(c, canvas))
 
 
+def afficher_pioche(canvas, cartes_non_distribuees):
+    """Affiche le paquet de cartes non distribuées (face cachée)"""
+    for carte in cartes_non_distribuees:
+        # Retourner la carte (face cachée)
+        carte.retournement_cartes()
+        carte.affichage_retournement_cartes()
+        
+        # Charger l'image (carte_retour.png)
+        img = tk.PhotoImage(file=carte.image)
+        carte.photo = img
+        canvas.images.append(img)
+        
+        # Placer la carte dans le paquet (toutes au même endroit)
+        image_id = canvas.create_image(canvas.pioche.x, canvas.pioche.y, image=img, anchor="nw")
+        carte.canvas_id = image_id
+        
+        # Ajouter à la pile pioche
+        canvas.pioche.ajouter_carte(carte)
+
+
 # ==================== LANCEMENT ====================
 
 def lancement():
@@ -279,21 +299,40 @@ def lancement():
         canvas.tag_bind(rect_id, "<Button-1>", 
                        lambda e, z=zone_obj: clic_zone_as(z, canvas))
 
-    # --- Zone Pioche (au-dessus de la 7e colonne) ---
-    x_pioche = x_depart = largeur * 0.15
-    x_pioche += 6 * (largeur * 0.1)  # Position de la 7e colonne
-    rect_pioche = canvas.create_rectangle(x_pioche, y_zone, x_pioche + w_zone, y_zone + h_zone, outline="white",dash=(5,3), width=2, fill="green")
+    # --- Zone Pioche (paquet de cartes non distribuées) ---
+    x_depart = largeur * 0.15
+    x_pioche = x_depart + 6 * (largeur * 0.1)  # Position de la 7e colonne
+    
+    # Initialiser la pile pioche AVANT de créer le rectangle
+    canvas.pioche = Pile(x_pioche, y_zone)
+    
+    rect_pioche = canvas.create_rectangle(x_pioche, y_zone, x_pioche + w_zone, y_zone + h_zone, 
+                                          outline="white", dash=(5,3), width=2, fill="green")
     canvas.create_text(x_pioche + w_zone//2, y_zone + h_zone//2, text="Pioche", fill="white", font=("Arial", 16))
 
+    # --- Zone Défausse (où vont les cartes piochées) ---
+    x_zone_pioche = x_pioche + w_zone + espacement
+    
+    # Initialiser la pile défausse
+    canvas.zone_pioche = Pile(x_zone_pioche, y_zone)
+    
+    rect_zone_pioche = canvas.create_rectangle(
+        x_zone_pioche, y_zone, 
+        x_zone_pioche + w_zone + 60, y_zone + h_zone,  # +60 pour voir les 3 cartes
+        outline="white", dash=(5,3), width=2, fill="green"
+    )
+    canvas.create_text(x_zone_pioche + (w_zone + 60)//2, y_zone + h_zone//2, 
+                       text="Défausse", fill="white", font=("Arial", 16))
+
     # --- Piles (7 colonnes principales) ---
-    x_depart = largeur * 0.15
     y_depart = y_zone + h_zone + 40
     decalage_x = largeur * 0.1
 
     for i in range(7):
         pile = Pile(x_depart + i * decalage_x, y_depart)
         canvas.piles.append(pile)
-        rect_id = canvas.create_rectangle(pile.x, pile.y, pile.x + w_zone, pile.y + h_zone, outline="white",dash=(3,3), width=2, fill="green")
+        rect_id = canvas.create_rectangle(pile.x, pile.y, pile.x + w_zone, pile.y + h_zone, 
+                                         outline="white", dash=(3,3), width=2, fill="green")
         pile.rect_id = rect_id
         canvas.tag_bind(rect_id, "<Button-1>", 
                        lambda e, p=pile: clic_pile(p, canvas))
@@ -302,21 +341,29 @@ def lancement():
     x_btn = largeur * 0.90
     y_btn_start = hauteur * 0.4
     
-    btn_piocher = tk.Button(root, text="Piocher 3 cartes", bg="orange", fg="white",font=("Arial", 12), width=15, height=2)
+    btn_piocher = tk.Button(root, text="Piocher 3 cartes", bg="orange", fg="white",
+                           font=("Arial", 12), width=15, height=2)
     btn_piocher.place(x=x_btn, y=y_btn_start, anchor="center")
     
-    btn_perdant = tk.Button(root, text="S'avouer perdant", bg="red", fg="white",font=("Arial", 12), width=15, height=2,command=root.destroy)
+    btn_perdant = tk.Button(root, text="S'avouer perdant", bg="red", fg="white",
+                           font=("Arial", 12), width=15, height=2, command=root.destroy)
     btn_perdant.place(x=x_btn, y=y_btn_start + 80, anchor="center")
     
-    btn_nouvelle = tk.Button(root, text="Nouvelle partie", bg="green", fg="white",font=("Arial", 12), width=15, height=2,command=lambda: nouvelle_partie(canvas, root))
+    btn_nouvelle = tk.Button(root, text="Nouvelle partie", bg="green", fg="white",
+                            font=("Arial", 12), width=15, height=2,
+                            command=lambda: nouvelle_partie(canvas, root))
     btn_nouvelle.place(x=x_btn, y=y_btn_start + 160, anchor="center")
 
     # Création et mélange du jeu
     jeu = creer_jeu()
     random.shuffle(jeu)
+    cartes_non_distribuees = jeu[28:]
     
-    # Mise en place initiale
+    # Mise en place initiale des 7 colonnes
     mise_en_place(canvas, jeu)
+    
+    # Afficher les cartes non distribuées dans la pioche
+    afficher_pioche(canvas, cartes_non_distribuees)
 
     root.mainloop()
 
