@@ -87,6 +87,14 @@ def clic_carte(carte, canvas):
                 pile_source = zone
                 break
     
+    # Vérifier la zone de pioche (défausse)
+    if pile_source is None and canvas.zone_pioche:
+        if carte in canvas.zone_pioche.cartes:
+            # On ne peut prendre que la carte du dessus
+            if canvas.zone_pioche.cartes[-1] != carte:
+                return
+            pile_source = canvas.zone_pioche
+    
     if pile_source is None:
         return
     
@@ -138,6 +146,10 @@ def clic_pile(pile, canvas):
                 top.photo = img
                 canvas.images.append(img)
                 canvas.itemconfig(top.canvas_id, image=img)
+            
+            # Si c'est la zone pioche, réafficher la défausse
+            if pile_origine == canvas.zone_pioche:
+                afficher_defausse(canvas)
     else:
         # Vient d'une zone as
         pile_origine.cartes.remove(carte_en_main)
@@ -188,6 +200,10 @@ def clic_zone_as(zone, canvas):
             top.photo = img
             canvas.images.append(img)
             canvas.itemconfig(top.canvas_id, image=img)
+        
+        # Si c'est la zone pioche, réafficher la défausse
+        if pile_origine == canvas.zone_pioche:
+            afficher_defausse(canvas)
     else:
         pile_origine.cartes.remove(carte_en_main)
     
@@ -207,6 +223,144 @@ def clic_zone_as(zone, canvas):
     
     carte_en_main = None
     pile_origine = None
+
+
+# ==================== GESTION DE LA PIOCHE ====================
+
+def piocher_cartes(canvas):
+    """Pioche 3 cartes du paquet et les affiche dans la zone défausse"""
+    # Si le paquet pioche est complètement vide, recycler la défausse
+    if len(canvas.pioche.cartes) == 0:
+        if len(canvas.zone_pioche.cartes) == 0:
+            # Aucune carte nulle part, ne rien faire
+            return
+        
+        # Recycler toutes les cartes de la défausse vers la pioche
+        recycler_defausse(canvas)
+        # Puis piocher 3 cartes immédiatement (ne pas faire return ici)
+    
+    # Compter combien de cartes on peut piocher maintenant
+    cartes_disponibles = len(canvas.pioche.cartes)
+    nombre_a_piocher = min(3, cartes_disponibles)
+    
+    # Piocher les cartes disponibles
+    for _ in range(nombre_a_piocher):
+        # Prendre la dernière carte de la pioche (dépiler)
+        carte = canvas.pioche.cartes.pop()
+        
+        # Retourner la carte pour la rendre face visible
+        carte.retour = False
+        carte.affichage_retournement_cartes()
+        
+        # Charger la nouvelle image (face visible)
+        img = tk.PhotoImage(file=carte.image)
+        carte.photo = img
+        canvas.images.append(img)
+        canvas.itemconfig(carte.canvas_id, image=img)
+        
+        # Ajouter la carte à la défausse
+        canvas.zone_pioche.ajouter_carte(carte)
+    
+    # Si on n'a pas pu piocher 3 cartes et qu'il reste des cartes dans la défausse
+    if nombre_a_piocher < 3 and len(canvas.pioche.cartes) == 0 and len(canvas.zone_pioche.cartes) < 3:
+        # Recycler la défausse (sauf les cartes qu'on vient de piocher)
+        cartes_a_garder = canvas.zone_pioche.cartes[-nombre_a_piocher:]
+        cartes_a_recycler = canvas.zone_pioche.cartes[:-nombre_a_piocher]
+        
+        if len(cartes_a_recycler) > 0:
+            # Vider temporairement la défausse
+            canvas.zone_pioche.cartes = cartes_a_garder
+            
+            # Remettre les cartes dans la pioche (dans l'ordre inverse)
+            for carte in reversed(cartes_a_recycler):
+                # Retourner la carte face cachée
+                carte.retour = True
+                carte.affichage_retournement_cartes()
+                img = tk.PhotoImage(file=carte.image)
+                carte.photo = img
+                canvas.images.append(img)
+                canvas.itemconfig(carte.canvas_id, image=img)
+                
+                # Replacer dans la pioche
+                canvas.coords(carte.canvas_id, canvas.pioche.x, canvas.pioche.y)
+                canvas.pioche.ajouter_carte(carte)
+            
+            # Piocher les cartes manquantes
+            cartes_manquantes = 3 - nombre_a_piocher
+            for _ in range(min(cartes_manquantes, len(canvas.pioche.cartes))):
+                carte = canvas.pioche.cartes.pop()
+                
+                # Retourner la carte pour la rendre face visible
+                carte.retour = False
+                carte.affichage_retournement_cartes()
+                
+                # Charger la nouvelle image (face visible)
+                img = tk.PhotoImage(file=carte.image)
+                carte.photo = img
+                canvas.images.append(img)
+                canvas.itemconfig(carte.canvas_id, image=img)
+                
+                # Ajouter la carte à la défausse
+                canvas.zone_pioche.ajouter_carte(carte)
+    
+    # Repositionner les cartes de la défausse pour afficher les 3 dernières en cascade
+    afficher_defausse(canvas)
+
+
+def recycler_defausse(canvas):
+    """Remet toutes les cartes de la défausse dans la pioche, retournées"""
+    if len(canvas.zone_pioche.cartes) == 0:
+        return
+    
+    # Prendre toutes les cartes de la défausse dans l'ordre inverse
+    # (la dernière de la défausse devient la première à piocher)
+    while len(canvas.zone_pioche.cartes) > 0:
+        carte = canvas.zone_pioche.cartes.pop()
+        
+        # Retourner la carte face cachée
+        carte.retour = True
+        carte.affichage_retournement_cartes()
+        
+        # Charger l'image face cachée
+        img = tk.PhotoImage(file=carte.image)
+        carte.photo = img
+        canvas.images.append(img)
+        canvas.itemconfig(carte.canvas_id, image=img)
+        
+        # Replacer dans la pioche
+        canvas.coords(carte.canvas_id, canvas.pioche.x, canvas.pioche.y)
+        canvas.pioche.ajouter_carte(carte)
+
+
+def afficher_defausse(canvas):
+    """Affiche les cartes de la défausse, avec les 3 dernières visibles en cascade"""
+    nb_cartes = len(canvas.zone_pioche.cartes)
+    
+    if nb_cartes == 0:
+        return
+    
+    # Parcourir toutes les cartes de la défausse
+    for i, carte in enumerate(canvas.zone_pioche.cartes):
+        # Les 3 dernières cartes sont visibles en cascade
+        if i >= nb_cartes - 3:
+            # Position relative parmi les 3 dernières (0, 1 ou 2)
+            position_cascade = i - (nb_cartes - 3)
+            decalage = position_cascade * 25  # Décalage horizontal de 25 pixels
+            x = canvas.zone_pioche.x + decalage
+            y = canvas.zone_pioche.y
+        else:
+            # Les autres cartes sont empilées au même endroit (non visibles)
+            x = canvas.zone_pioche.x
+            y = canvas.zone_pioche.y
+        
+        # Déplacer la carte
+        canvas.coords(carte.canvas_id, x, y)
+        canvas.tag_raise(carte.canvas_id)
+        
+        # Bind le clic uniquement sur la dernière carte (la plus visible)
+        if i == nb_cartes - 1:
+            canvas.tag_bind(carte.canvas_id, "<Button-1>",
+                          lambda e, c=carte: clic_carte(c, canvas))
 
 
 # ==================== MISE EN PLACE ====================
@@ -290,10 +444,12 @@ def lancement():
 
     for i in range(4):
         x = x_zone + i * (w_zone + espacement)
-        rect_id = canvas.create_rectangle(x, y_zone, x + w_zone, y_zone + h_zone,outline="white", dash=(5,3), width=2, fill="green")
+        rect_id = canvas.create_rectangle(x, y_zone, x + w_zone, y_zone + h_zone,
+                                         outline="white", dash=(5,3), width=2, fill="green")
         zone_obj = Zones_as(valeur=0, famille=None, x=x, y=y_zone)
         zone_obj.rect_id = rect_id
-        text_id = canvas.create_text(x + w_zone//2, y_zone + h_zone//2, text="As", fill="white", font=("Arial", 16))
+        text_id = canvas.create_text(x + w_zone//2, y_zone + h_zone//2, text="As", 
+                                     fill="white", font=("Arial", 16))
         zone_obj.text_id = text_id
         canvas.zones_as.append(zone_obj)
         canvas.tag_bind(rect_id, "<Button-1>", 
@@ -308,7 +464,8 @@ def lancement():
     
     rect_pioche = canvas.create_rectangle(x_pioche, y_zone, x_pioche + w_zone, y_zone + h_zone, 
                                           outline="white", dash=(5,3), width=2, fill="green")
-    canvas.create_text(x_pioche + w_zone//2, y_zone + h_zone//2, text="Pioche", fill="white", font=("Arial", 16))
+    canvas.create_text(x_pioche + w_zone//2, y_zone + h_zone//2, text="Pioche", 
+                      fill="white", font=("Arial", 16))
 
     # --- Zone Défausse (où vont les cartes piochées) ---
     x_zone_pioche = x_pioche + w_zone + espacement
@@ -316,12 +473,13 @@ def lancement():
     # Initialiser la pile défausse
     canvas.zone_pioche = Pile(x_zone_pioche, y_zone)
     
+    largeur_defausse = w_zone + 50  # Juste assez pour les 3 cartes en cascade
     rect_zone_pioche = canvas.create_rectangle(
         x_zone_pioche, y_zone, 
-        x_zone_pioche + w_zone + 60, y_zone + h_zone,  # +60 pour voir les 3 cartes
+        x_zone_pioche + largeur_defausse, y_zone + h_zone,
         outline="white", dash=(5,3), width=2, fill="green"
     )
-    canvas.create_text(x_zone_pioche + (w_zone + 60)//2, y_zone + h_zone//2, 
+    canvas.create_text(x_zone_pioche + largeur_defausse//2, y_zone + h_zone//2, 
                        text="Défausse", fill="white", font=("Arial", 16))
 
     # --- Piles (7 colonnes principales) ---
@@ -342,7 +500,8 @@ def lancement():
     y_btn_start = hauteur * 0.4
     
     btn_piocher = tk.Button(root, text="Piocher 3 cartes", bg="orange", fg="white",
-                           font=("Arial", 12), width=15, height=2)
+                           font=("Arial", 12), width=15, height=2,
+                           command=lambda: piocher_cartes(canvas))
     btn_piocher.place(x=x_btn, y=y_btn_start, anchor="center")
     
     btn_perdant = tk.Button(root, text="S'avouer perdant", bg="red", fg="white",
