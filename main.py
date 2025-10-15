@@ -357,6 +357,9 @@ def afficher_defausse(canvas):
         canvas.coords(carte.canvas_id, x, y)
         canvas.tag_raise(carte.canvas_id)
         
+        # Unbind tous les clics d'abord
+        canvas.tag_unbind(carte.canvas_id, "<Button-1>")
+        
         # Bind le clic uniquement sur la dernière carte (la plus visible)
         if i == nb_cartes - 1:
             canvas.tag_bind(carte.canvas_id, "<Button-1>",
