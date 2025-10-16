@@ -1,9 +1,10 @@
 class Pile:
-    def __init__(self, x, y):
+    def __init__(self, x, y, decalage_y=40):
         self.cartes = []
         self.x = x
         self.y = y
         self.rect_id = None
+        self.decalage_y = decalage_y  # Décalage adaptatif
 
     def peut_ajouter(self, carte):
         if not self.cartes:
@@ -25,8 +26,7 @@ class Pile:
 
     def coord_carte(self, index):
         """Retourne les coordonnées pour la carte à l'index donné"""
-        decalage_y = 40
-        return self.x, self.y + decalage_y * index
+        return self.x, self.y + self.decalage_y * index
 
     def trouver_index_carte(self, carte):
         """Trouve l'index d'une carte dans la pile"""
