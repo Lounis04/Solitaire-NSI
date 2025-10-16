@@ -6,7 +6,6 @@ class Zones_as:
         self.x = x
         self.y = y
         self.rect_id = None
-        self.text_id = None
 
     def peut_ajouter(self, carte):
         if not self.cartes:
