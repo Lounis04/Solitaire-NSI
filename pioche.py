@@ -1,21 +1,22 @@
 import tkinter as tk
+from utils import redimensionner_image
 
-def piocher_cartes(canvas):
-    """Pioche 3 cartes du paquet et les affiche dans la zone défausse"""
+def piocher_cartes(canvas: tk.Canvas) -> None:
+    """Pioche 3 cartes du paquet et les affiche dans la zone défausse.Les entrées sont le canvas contenant la pioche et la défausse.Il n'y a pas de sortie (None)."""
     if len(canvas.pioche.cartes) == 0:
         if len(canvas.zone_pioche.cartes) == 0:
             return
         recycler_defausse(canvas)
     
-    cartes_disponibles = len(canvas.pioche.cartes)
-    nombre_a_piocher = min(3, cartes_disponibles)
+    cartes_disponibles: int = len(canvas.pioche.cartes)
+    nombre_a_piocher: int = min(3, cartes_disponibles)
     
     for _ in range(nombre_a_piocher):
         carte = canvas.pioche.cartes.pop()
         carte.retour = False
         carte.affichage_retournement_cartes()
         
-        img = tk.PhotoImage(file=carte.image)
+        img: tk.PhotoImage = redimensionner_image(carte.image, canvas.carte_largeur, canvas.carte_hauteur)
         carte.photo = img
         canvas.images.append(img)
         canvas.itemconfig(carte.canvas_id, image=img)
@@ -32,7 +33,7 @@ def piocher_cartes(canvas):
             for carte in reversed(cartes_a_recycler):
                 carte.retour = True
                 carte.affichage_retournement_cartes()
-                img = tk.PhotoImage(file=carte.image)
+                img: tk.PhotoImage = redimensionner_image(carte.image, canvas.carte_largeur, canvas.carte_hauteur)
                 carte.photo = img
                 canvas.images.append(img)
                 canvas.itemconfig(carte.canvas_id, image=img)
@@ -40,13 +41,13 @@ def piocher_cartes(canvas):
                 canvas.coords(carte.canvas_id, canvas.pioche.x, canvas.pioche.y)
                 canvas.pioche.ajouter_carte(carte)
             
-            cartes_manquantes = 3 - nombre_a_piocher
+            cartes_manquantes: int = 3 - nombre_a_piocher
             for _ in range(min(cartes_manquantes, len(canvas.pioche.cartes))):
                 carte = canvas.pioche.cartes.pop()
                 carte.retour = False
                 carte.affichage_retournement_cartes()
                 
-                img = tk.PhotoImage(file=carte.image)
+                img: tk.PhotoImage = redimensionner_image(carte.image, canvas.carte_largeur, canvas.carte_hauteur)
                 carte.photo = img
                 canvas.images.append(img)
                 canvas.itemconfig(carte.canvas_id, image=img)
@@ -56,8 +57,8 @@ def piocher_cartes(canvas):
     afficher_defausse(canvas)
 
 
-def recycler_defausse(canvas):
-    """Remet toutes les cartes de la défausse dans la pioche, retournées"""
+def recycler_defausse(canvas: tk.Canvas) -> None:
+    """Remet toutes les cartes de la défausse dans la pioche, face cachée.Les entrées sont le canvas contenant la pioche et la défausse.Il n'y a pas de sortie (None)."""
     if len(canvas.zone_pioche.cartes) == 0:
         return
     
@@ -66,7 +67,7 @@ def recycler_defausse(canvas):
         carte.retour = True
         carte.affichage_retournement_cartes()
         
-        img = tk.PhotoImage(file=carte.image)
+        img: tk.PhotoImage = redimensionner_image(carte.image, canvas.carte_largeur, canvas.carte_hauteur)
         carte.photo = img
         canvas.images.append(img)
         canvas.itemconfig(carte.canvas_id, image=img)
@@ -75,24 +76,24 @@ def recycler_defausse(canvas):
         canvas.pioche.ajouter_carte(carte)
 
 
-def afficher_defausse(canvas):
-    """Affiche les cartes de la défausse, avec les 3 dernières visibles en cascade"""
+def afficher_defausse(canvas: tk.Canvas) -> None:
+    """Affiche les cartes de la défausse avec les 3 dernières visibles en cascade.Les entrées sont le canvas contenant la zone défausse.Il n'y a pas de sortie (None)."""
     from gestionnaire_clics import clic_carte
     
-    nb_cartes = len(canvas.zone_pioche.cartes)
+    nb_cartes: int = len(canvas.zone_pioche.cartes)
     
     if nb_cartes == 0:
         return
     
     for i, carte in enumerate(canvas.zone_pioche.cartes):
         if i >= nb_cartes - 3:
-            position_cascade = i - (nb_cartes - 3)
-            decalage = position_cascade * 25
-            x = canvas.zone_pioche.x + decalage
-            y = canvas.zone_pioche.y
+            position_cascade: int = i - (nb_cartes - 3)
+            decalage: int = position_cascade * 25
+            x: int = canvas.zone_pioche.x + decalage
+            y: int = canvas.zone_pioche.y
         else:
-            x = canvas.zone_pioche.x
-            y = canvas.zone_pioche.y
+            x: int = canvas.zone_pioche.x
+            y: int = canvas.zone_pioche.y
         
         canvas.coords(carte.canvas_id, x, y)
         canvas.tag_raise(carte.canvas_id)

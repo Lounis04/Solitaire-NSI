@@ -1,22 +1,25 @@
 import tkinter as tk
 from piles import Pile
+from zones_as import Zones_as
+from cartes import Cartes
 from statistiques import incrementer_coups, mettre_a_jour_interface
 from jeu import verifier_victoire
+from utils import redimensionner_image
 
 # Variables globales pour la sélection
-carte_en_main = None
-pile_origine = None
+carte_en_main: Cartes | None = None
+pile_origine: Pile | None  = None
 
 
-def reset_selection():
-    """Réinitialise la sélection de carte"""
+def reset_selection() -> None:
+    """Réinitialise la sélection de carte.Il n'y a pas d'entrée.Il n'y a pas de sortie (None)."""
     global carte_en_main, pile_origine
     carte_en_main = None
     pile_origine = None
 
 
-def clic_carte(carte, canvas):
-    """Gère le clic sur une carte"""
+def clic_carte(carte: Cartes, canvas: tk.Canvas) -> None:
+    """Gère le clic sur une carte pour la sélectionner ou la déposer.Les entrées sont la carte cliquée et le canvas du jeu.Il n'y a pas de sortie (None)."""
     global carte_en_main, pile_origine
     
     # Si on clique sur la carte déjà sélectionnée, on la désélectionne
@@ -50,7 +53,7 @@ def clic_carte(carte, canvas):
     pile_source = None
     
     for pile in canvas.piles:
-        idx = pile.trouver_index_carte(carte)
+        idx: int = pile.trouver_index_carte(carte)
         if idx != -1:
             pile_source = pile
             break
@@ -85,14 +88,17 @@ def clic_carte(carte, canvas):
     pile_origine = pile_source
     
     # Crée un rectangle de sélection
+    x: int
+    y: int
     x, y = canvas.coords(carte.canvas_id)[:2]
-    w, h = carte.photo.width(), carte.photo.height()
-    rect = canvas.create_rectangle(x, y, x + w, y + h, outline="yellow", width=3)
+    w: int = carte.photo.width()
+    h: int = carte.photo.height()
+    rect: int = canvas.create_rectangle(x, y, x + w, y + h, outline="yellow", width=3)
     carte.selection_rect = rect
 
 
-def clic_pile(pile, canvas):
-    """Gère le clic sur une pile pour y déposer une carte"""
+def clic_pile(pile: Pile, canvas: tk.Canvas) -> None:
+    """Gère le clic sur une pile pour y déposer une carte.Les entrées sont la pile de destination et le canvas du jeu.Il n'y a pas de sortie (None)."""
     global carte_en_main, pile_origine
     from pioche import afficher_defausse
     
@@ -109,7 +115,7 @@ def clic_pile(pile, canvas):
     cartes_a_deplacer = [carte_en_main]
     
     if isinstance(pile_origine, Pile):
-        idx = pile_origine.trouver_index_carte(carte_en_main)
+        idx: int = pile_origine.trouver_index_carte(carte_en_main)
         if idx != -1:
             cartes_a_deplacer = pile_origine.cartes[idx:]
             pile_origine.cartes = pile_origine.cartes[:idx]
@@ -118,7 +124,7 @@ def clic_pile(pile, canvas):
             if top and top.retour:
                 top.retour = False
                 top.affichage_retournement_cartes()
-                img = tk.PhotoImage(file=top.image)
+                img: tk.PhotoImage = redimensionner_image(top.image, canvas.carte_largeur, canvas.carte_hauteur)
                 top.photo = img
                 canvas.images.append(img)
                 canvas.itemconfig(top.canvas_id, image=img)
@@ -130,6 +136,8 @@ def clic_pile(pile, canvas):
     
     for carte in cartes_a_deplacer:
         pile.ajouter_carte(carte)
+        x: int
+        y: int
         x, y = pile.coord_carte(pile.cartes.index(carte))
         canvas.coords(carte.canvas_id, x, y)
         canvas.tag_raise(carte.canvas_id)
@@ -144,8 +152,8 @@ def clic_pile(pile, canvas):
     verifier_victoire(canvas)
 
 
-def clic_zone_as(zone, canvas):
-    """Gère le clic sur une zone As pour y déposer une carte"""
+def clic_zone_as(zone: Zones_as, canvas: tk.Canvas) -> None:
+    """Gère le clic sur une zone As pour y déposer une carte.Les entrées sont la zone As de destination et le canvas du jeu.Il n'y a pas de sortie (None)."""
     global carte_en_main, pile_origine
     from pioche import afficher_defausse
     
@@ -153,7 +161,7 @@ def clic_zone_as(zone, canvas):
         return
     
     if isinstance(pile_origine, Pile):
-        idx = pile_origine.trouver_index_carte(carte_en_main)
+        idx: int = pile_origine.trouver_index_carte(carte_en_main)
         if idx != len(pile_origine.cartes) - 1:
             return
     
@@ -170,7 +178,7 @@ def clic_zone_as(zone, canvas):
         if top and top.retour:
             top.retour = False
             top.affichage_retournement_cartes()
-            img = tk.PhotoImage(file=top.image)
+            img: tk.PhotoImage = redimensionner_image(top.image, canvas.carte_largeur, canvas.carte_hauteur)
             top.photo = img
             canvas.images.append(img)
             canvas.itemconfig(top.canvas_id, image=img)
