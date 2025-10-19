@@ -1,42 +1,44 @@
 import tkinter as tk
-from typing import List
-
 
 def redimensionner_image(chemin: str, largeur: int, hauteur: int) -> tk.PhotoImage:
-    """
-    Redimensionne une image aux dimensions spécifiées avec tkinter.
-    Les entrées sont le chemin vers l'image, la largeur cible et la hauteur cible.
-    La sortie est un objet PhotoImage redimensionné.
-    """
-    img: tk.PhotoImage = tk.PhotoImage(file=chemin)
-    largeur_originale: int = img.width()
-    hauteur_originale: int = img.height()
-    
-    # Calculer les facteurs de zoom
-    zoom_x: float = largeur / largeur_originale
-    zoom_y: float = hauteur / hauteur_originale
-    
-    # Redimensionner avec subsample ou zoom selon le cas
-    if zoom_x < 1 and zoom_y < 1:
-        # Réduction : utiliser subsample
-        subsample_x: int = max(1, int(1 / zoom_x))
-        subsample_y: int = max(1, int(1 / zoom_y))
-        img = img.subsample(subsample_x, subsample_y)
-    elif zoom_x > 1 and zoom_y > 1:
-        # Agrandissement : utiliser zoom
-        zoom_factor_x: int = max(1, int(zoom_x))
-        zoom_factor_y: int = max(1, int(zoom_y))
-        img = img.zoom(zoom_factor_x, zoom_factor_y)
-    
-    return img
+    """Redimensionne une image aux dimensions spécifiées avec tkinter.Les entrées sont le chemin vers l'image, la largeur cible et la hauteur cible.La sortie est un objet PhotoImage redimensionné."""
+    try:
+        img: tk.PhotoImage = tk.PhotoImage(file=chemin)
+        largeur_originale: int = img.width()
+        hauteur_originale: int = img.height()
+        
+        # Calculer les ratios
+        ratio_x: float = largeur / largeur_originale
+        ratio_y: float = hauteur / hauteur_originale
+        
+        # Pour les GIF, on privilégie subsample qui fonctionne mieux
+        if ratio_x <= 1.0 or ratio_y <= 1.0:
+            # Réduction avec subsample
+            subsample_x: int = max(1, int(largeur_originale / largeur))
+            subsample_y: int = max(1, int(hauteur_originale / hauteur))
+            img = img.subsample(subsample_x, subsample_y)
+        else:
+            # Agrandissement avec zoom (rarement nécessaire)
+            zoom_x: int = max(1, int(ratio_x))
+            zoom_y: int = max(1, int(ratio_y))
+            img = img.zoom(zoom_x, zoom_y)
+            
+            # Si l'image est trop grande après zoom, réduire
+            if img.width() > largeur or img.height() > hauteur:
+                subsample_x: int = max(1, int(img.width() / largeur))
+                subsample_y: int = max(1, int(img.height() / hauteur))
+                img = img.subsample(subsample_x, subsample_y)
+        
+        return img
+    except Exception as e:
+        print(f"Erreur lors du chargement de {chemin}: {e}")
+        # Créer une image de secours
+        img_secours = tk.PhotoImage(width=largeur, height=hauteur)
+        return img_secours
 
 
-def mise_en_place(canvas: tk.Canvas, jeu: List) -> None:
-    """
-    Place les 7 colonnes du Solitaire avec leurs cartes initiales.
-    Les entrées sont le canvas du jeu et la liste des cartes à distribuer.
-    Il n'y a pas de sortie (None).
-    """
+def mise_en_place(canvas: tk.Canvas, jeu: list) -> None:
+    """Place les 7 colonnes du Solitaire avec leurs cartes initiales.Les entrées sont le canvas du jeu et la liste des cartes à distribuer.Il n'y a pas de sortie (None)."""
     from gestionnaire_clics import clic_carte
     
     index: int = 0
@@ -66,12 +68,8 @@ def mise_en_place(canvas: tk.Canvas, jeu: List) -> None:
             canvas.tag_bind(image_id, "<Button-1>",lambda e, c=carte: clic_carte(c, canvas))
 
 
-def afficher_pioche(canvas: tk.Canvas, cartes_non_distribuees: List) -> None:
-    """
-    Affiche le paquet de cartes non distribuées (face cachée) dans la zone pioche.
-    Les entrées sont le canvas du jeu et la liste des cartes restantes.
-    Il n'y a pas de sortie (None).
-    """
+def afficher_pioche(canvas: tk.Canvas, cartes_non_distribuees: list) -> None:
+    """Affiche le paquet de cartes non distribuées (face cachée) dans la zone pioche.Les entrées sont le canvas du jeu et la liste des cartes restantes.Il n'y a pas de sortie (None)."""
     for carte in cartes_non_distribuees:
         carte.retournement_cartes()
         carte.affichage_retournement_cartes()
